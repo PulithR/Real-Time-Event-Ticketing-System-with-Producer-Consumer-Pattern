@@ -1,6 +1,11 @@
-import com.google.gson.Gson;
+import com.google.gson.*;
 
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.InputMismatchException;
+import java.util.List;
 import java.util.Scanner;
 
 public class Main {
@@ -12,6 +17,7 @@ public class Main {
         int maxTicketCapacity;
         int PriorityCustomerNum;
         int PriorityCustomerRetrievalRate;
+        Configuration configuration;
         Scanner scanner = new Scanner(System.in);
 
         totalTickets = validate("Enter the Total Number of Tickets: ");
@@ -34,10 +40,10 @@ public class Main {
             if (choice == 1) {
                 PriorityCustomerNum = validate("Enter the number of VIP customers? ");
                 PriorityCustomerRetrievalRate = validate("Enter the Customer Retrieval rate in milli-seconds(VIP): ");
-                Configuration configuration = new Configuration(totalTickets, TicketReleaseRate, customerRetrievalRate, maxTicketCapacity, PriorityCustomerNum, PriorityCustomerRetrievalRate);
+                configuration = new Configuration(totalTickets, TicketReleaseRate, customerRetrievalRate, maxTicketCapacity, PriorityCustomerNum, PriorityCustomerRetrievalRate);
                 break;
             } else if (choice == 2) {
-                Configuration configuration = new Configuration(totalTickets, TicketReleaseRate, customerRetrievalRate, maxTicketCapacity);
+                configuration = new Configuration(totalTickets, TicketReleaseRate, customerRetrievalRate, maxTicketCapacity);
                 break;
             } else {
                 System.out.println("Enter a valid choice");
@@ -45,8 +51,10 @@ public class Main {
             }
         }
 
-        System.out.println("\nStarting Stimulation\n");
         storeJSON(configuration);
+        System.out.println("\nStarting Stimulation\n");
+//        runStimulation();
+
 
 
 
@@ -110,6 +118,34 @@ public class Main {
     }
 
     public static void storeJSON(Configuration configuration) {
-        Gson gson = new Gson().setPre
+        Gson gson = new GsonBuilder().setPrettyPrinting().create();
+        List<Configuration> configurationList = new ArrayList<>();
+
+        try (FileReader reader = new FileReader("configuration.json")){
+            JsonElement jsonElement = JsonParser.parseReader(reader);
+            if (jsonElement.isJsonArray()) {
+                JsonArray jsonArray = jsonElement.getAsJsonArray();
+                for (JsonElement element : jsonArray) {
+                    Configuration existingConfig = gson.fromJson(element, Configuration.class);
+                    configurationList.add(existingConfig);
+                }
+            }
+        } catch (IOException e) {
+            System.out.println("No existing configuration file found. A new file will be created.");
+        }
+
+        configurationList.add(configuration);
+
+        try (FileWriter writer = new FileWriter("configuration.json")){
+            gson.toJson(configurationList, writer);
+            System.out.println("Configuration successfully recorded.");
+        } catch (IOException e) {
+            System.err.println("Error recording configuration: " + e.getMessage());
+        }
+
     }
+
+//    public static void runStimulation() throws InterruptedException {
+//
+//    }
 }
