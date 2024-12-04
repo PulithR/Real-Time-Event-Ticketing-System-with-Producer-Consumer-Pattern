@@ -12,7 +12,8 @@ public class Main {
 
     public static void main(String[] args){
         int totalTickets;
-        int TicketReleaseRate;
+        int customerNum;
+        int ticketReleaseRate;
         int customerRetrievalRate;
         int maxTicketCapacity;
         int PriorityCustomerNum;
@@ -21,7 +22,8 @@ public class Main {
         Scanner scanner = new Scanner(System.in);
 
         totalTickets = validate("Enter the Total Number of Tickets: ");
-        TicketReleaseRate = validate("Enter the Ticket Release rate (milli-seconds): ");
+        customerNum = validate("Enter the number of customers: ");
+        ticketReleaseRate = validate("Enter the Ticket Release rate (milli-seconds): ");
         customerRetrievalRate = validate("Enter the Customer Retrieval rate in milli-seconds(Non VIP): ");
         maxTicketCapacity = validate("Enter the maximum Ticket capacity(>=Total Number of Tickets): ", totalTickets);
 
@@ -40,10 +42,10 @@ public class Main {
             if (choice == 1) {
                 PriorityCustomerNum = validate("Enter the number of VIP customers? ");
                 PriorityCustomerRetrievalRate = validate("Enter the Customer Retrieval rate in milli-seconds(VIP): ");
-                configuration = new Configuration(totalTickets, TicketReleaseRate, customerRetrievalRate, maxTicketCapacity, PriorityCustomerNum, PriorityCustomerRetrievalRate);
+                configuration = new Configuration(totalTickets, customerNum, ticketReleaseRate, customerRetrievalRate, maxTicketCapacity, PriorityCustomerNum, PriorityCustomerRetrievalRate);
                 break;
             } else if (choice == 2) {
-                configuration = new Configuration(totalTickets, TicketReleaseRate, customerRetrievalRate, maxTicketCapacity);
+                configuration = new Configuration(totalTickets, customerNum, ticketReleaseRate, customerRetrievalRate, maxTicketCapacity);
                 break;
             } else {
                 System.out.println("Enter a valid choice");
