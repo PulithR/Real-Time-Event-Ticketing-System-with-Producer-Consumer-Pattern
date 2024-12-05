@@ -13,15 +13,12 @@ public class Vendor implements Runnable {
 
     @Override
     public void run(){
-        int totalTickets = 0;
+        int addedTickets = 0;
         try{
-            while (totalTickets < config.getMaxTicketCapacity()){
-                Ticket ticket =  new Ticket("T" + (++totalTickets));
-                ticketPool.addTicket(ticket, vendorID);
-                System.out.println(vendorID + " added a ticket | Total number of tickets: " + totalTickets);
-                Thread.sleep(config.getTicketReleaseRate());
-            }
-            if(totalTickets == config.getMaxTicketCapacity()){
+            while (addedTickets < config.getMaxTicketCapacity()){
+                Ticket ticket =  new Ticket("T" + (++addedTickets));
+                ticketPool.addTicket(ticket);
+                System.out.println("Vendor: " + vendorID + " added a ticket (" + ticket.getTicketID() + ") | Total number of tickets: " + addedTickets);
                 Thread.sleep(config.getTicketReleaseRate());
             }
         } catch (InterruptedException e) {

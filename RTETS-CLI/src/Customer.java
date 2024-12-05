@@ -1,40 +1,28 @@
 public class Customer implements Runnable {
-    private String customerID;
-    private TicketPool ticketPool;
-    private int customerNum;
-    private int customerRetrievalRate;
-    private int PriorityCustomerNum;
-    private int PriorityCustomerRetrievalRate;
+    private final String customerID;
+    private final TicketPool ticketPool;
+    private final boolean isPriorityCustomer;
+    private final int retrievalRate;
 
 
-    public Customer(String customerID, TicketPool ticketPool, int customerNum, int customerRetrievalRate, int PriorityCustomerNum, int PriorityCustomerRetrievalRate){
+    public Customer(String customerID, TicketPool ticketPool, boolean isPriorityCustomer, int retrievalRate){
         this.customerID = customerID;
         this.ticketPool = ticketPool;
-        this.customerNum = customerNum;
-        this.customerRetrievalRate = customerRetrievalRate;
-        this.PriorityCustomerNum = PriorityCustomerNum;
-        this.PriorityCustomerRetrievalRate = PriorityCustomerRetrievalRate;
+        this.isPriorityCustomer = isPriorityCustomer;
+        this.retrievalRate = retrievalRate;
     }
 
-    public Customer(String customerID, TicketPool ticketPool, int customerNum, int customerRetrievalRate){
-        this.customerID = customerID;
-        this.ticketPool = ticketPool;
-        this.customerNum = customerNum;
-        this.customerRetrievalRate = customerRetrievalRate;
-    }
 
     @Override
     public void run(){
         try {
-            Ticket ticket = TicketPool.buyTicket(isPriorityCustomer);
-
-            if (ticket != null) {
-                System.out.println(customerID + (isPriorityCustomer ? " (Priority)" : "") + " successfully purchased Ticket: " + ticket.getTicketID());
-            } else {
-                System.out.println(customerID + (isPriorityCustomer ? " (Priority)" : "") + " could not purchase a ticket. No tickets available.");
+            while (!ticketPool.allTicketsProcessed()) {
+                ticketPool.buyTicket(customerID, isPriorityCustomer);
+                Thread.sleep(retrievalRate);
             }
-        } catch (Exception e) {
-            System.err.println(customerID + " encountered an error during ticket purchase: " + e.getMessage());
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            System.out.println(customerID + " interrupted.");
         }
     }
 }

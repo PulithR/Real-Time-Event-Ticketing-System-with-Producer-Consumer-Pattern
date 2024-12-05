@@ -12,6 +12,7 @@ public class Main {
 
     public static void main(String[] args){
         int totalTickets;
+        int vendorNum;
         int customerNum;
         int ticketReleaseRate;
         int customerRetrievalRate;
@@ -21,7 +22,9 @@ public class Main {
         Configuration configuration;
         Scanner scanner = new Scanner(System.in);
 
+
         totalTickets = validate("Enter the Total Number of Tickets: ");
+        vendorNum = validate("Enter the number of Vendors: ");
         customerNum = validate("Enter the number of customers: ");
         ticketReleaseRate = validate("Enter the Ticket Release rate (milli-seconds): ");
         customerRetrievalRate = validate("Enter the Customer Retrieval rate in milli-seconds(Non VIP): ");
@@ -42,10 +45,10 @@ public class Main {
             if (choice == 1) {
                 PriorityCustomerNum = validate("Enter the number of VIP customers? ");
                 PriorityCustomerRetrievalRate = validate("Enter the Customer Retrieval rate in milli-seconds(VIP): ");
-                configuration = new Configuration(totalTickets, customerNum, ticketReleaseRate, customerRetrievalRate, maxTicketCapacity, PriorityCustomerNum, PriorityCustomerRetrievalRate);
+                configuration = new Configuration(totalTickets, vendorNum, customerNum, ticketReleaseRate, customerRetrievalRate, maxTicketCapacity, PriorityCustomerNum, PriorityCustomerRetrievalRate);
                 break;
             } else if (choice == 2) {
-                configuration = new Configuration(totalTickets, customerNum, ticketReleaseRate, customerRetrievalRate, maxTicketCapacity);
+                configuration = new Configuration(totalTickets, vendorNum, customerNum, ticketReleaseRate, customerRetrievalRate, maxTicketCapacity);
                 break;
             } else {
                 System.out.println("Enter a valid choice");
@@ -55,7 +58,11 @@ public class Main {
 
         storeJSON(configuration);
         System.out.println("\nStarting Stimulation\n");
-//        runStimulation();
+        try{
+            runStimulation(configuration);
+        } catch (InterruptedException e){
+            System.out.println("Interrupted while threading");
+        }
 
 
 
@@ -147,7 +154,24 @@ public class Main {
 
     }
 
-//    public static void runStimulation() throws InterruptedException {
-//
-//    }
+    public static void runStimulation(Configuration configuration) throws InterruptedException {
+        TicketPool ticketPool = new TicketPool(configuration.getMaxTicketCapacity(), configuration.getTotalTickets());
+
+        for (int i = 0; i < configuration.getVendorNum(); i++) {
+            new Thread(new Vendor(ticketPool, configuration, "Vendor_" + i)).start();
+        }
+        Thread.sleep(3);
+
+        for (int i = 0; i < (configuration.getPriorityCustomerNum()); i++) {
+            new Thread(new Customer("VIP_Customer_" + i, ticketPool, true, configuration.getPriorityCustomerRetrievalRate())).start();
+        }
+
+        for(int i = 0; i < (configuration.getCustomerNum()); i++) {
+            new Thread(new Customer("Customer_" + i, ticketPool, false, configuration.getCustomerRetrievalRate())).start();
+        }
+
+        System.out.println();
+        System.out.println("Total tickets sold:" +  ticketPool.getTotalTicketsSold());
+
+    }
 }

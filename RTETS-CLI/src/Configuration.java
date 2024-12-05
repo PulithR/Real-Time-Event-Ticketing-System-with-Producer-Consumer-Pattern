@@ -1,5 +1,6 @@
 public class Configuration {
     private int totalTickets;
+    private int vendorNum;
     private int customerNum;
     private int ticketReleaseRate;
     private int customerRetrievalRate;
@@ -7,8 +8,9 @@ public class Configuration {
     private int PriorityCustomerNum;
     private int PriorityCustomerRetrievalRate;
 
-    public Configuration(int totalTickets, int customerNum, int ticketReleaseRate, int customerRetrievalRate, int maxTicketCapacity, int PriorityCustomerNum, int PriorityCustomerRetrievalRate){
+    public Configuration(int totalTickets, int vendorNum, int customerNum, int ticketReleaseRate, int customerRetrievalRate, int maxTicketCapacity, int PriorityCustomerNum, int PriorityCustomerRetrievalRate){
         this.totalTickets = totalTickets;
+        this.vendorNum = vendorNum;
         this.customerNum = customerNum;
         this.ticketReleaseRate = ticketReleaseRate;
         this.customerRetrievalRate = customerRetrievalRate;
@@ -18,8 +20,9 @@ public class Configuration {
     }
 
 
-    public Configuration(int totalTickets, int customerNum, int ticketReleaseRate, int customerRetrievalRate, int maxTicketCapacity){
+    public Configuration(int totalTickets, int vendorNum, int customerNum, int ticketReleaseRate, int customerRetrievalRate, int maxTicketCapacity){
         this.totalTickets = totalTickets;
+        this.vendorNum = vendorNum;
         this.customerNum = customerNum;
         this.ticketReleaseRate = ticketReleaseRate;
         this.customerRetrievalRate = customerRetrievalRate;
@@ -29,6 +32,8 @@ public class Configuration {
     public int getTotalTickets(){
         return this.totalTickets;
     }
+
+    public int getVendorNum() { return this.vendorNum; }
 
     public int getCustomerNum(){
         return this.customerNum;
@@ -52,5 +57,9 @@ public class Configuration {
 
     public int getPriorityCustomerRetrievalRate(){
         return this.PriorityCustomerRetrievalRate;
+    }
+
+    public int getTotalCustomerNum() {
+        return this.customerNum + this.getPriorityCustomerNum();
     }
 }

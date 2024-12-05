@@ -1,52 +1,84 @@
-import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class TicketPool {
-    private final List<Ticket> tickets;
+    private final List<Ticket> tickets = new LinkedList<>();
     private final int maxCapacity;
+    private final ReentrantLock lock = new ReentrantLock();
+    private final Condition ticketsAvailable = lock.newCondition();
+    private final Condition priorityTurn = lock.newCondition();
+    private boolean priorityAccess = true;
+    private int totalTicketsAdded = 0;
+    private int totalTicketsSold = 0;
+    private final int totalTicketsToAdd;
 
-    public TicketPool(int maxCapacity){
-        this.tickets = Collections.synchronizedList(new LinkedList<>());
+    public TicketPool(int maxCapacity, int totalTicketsToAdd){
         this.maxCapacity = maxCapacity;
+        this.totalTicketsToAdd = totalTicketsToAdd;
     }
 
-    public synchronized void addTicket(Ticket ticket){
-        while (tickets.size() >= maxCapacity){
-            try {
-                wait();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-                throw new RuntimeException(e.getMessage());
+    public void addTicket(Ticket ticket) throws InterruptedException{
+        lock.lock();
+        try {
+            while (tickets.size() >= maxCapacity) {
+                ticketsAvailable.await();
             }
-        }
 
-        this.tickets.add(ticket);
-        notifyAll();
-        System.out.println("Ticket added by: " + Thread.currentThread().getName() + " | " + "current size is: " + tickets.size());
+            tickets.add(ticket);
+            totalTicketsAdded++;
+//            System.out.println("Ticket added: " + ticket.getTicketID() + " | Total Tickets in pool: " + tickets.size());
+
+            ticketsAvailable.signalAll();
+
+        } finally {
+            lock.unlock();
+        }
     }
 
 
-    public synchronized void buyTicket(String customerID, boolean isPriorityCustomer) {
-        while (tickets.isEmpty()){
-            if (!isPriorityCustomer) {
-                try {
-                    wait();
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    System.err.println(customerID + " was interrupted while waiting for a ticket.");
+    public void buyTicket(String customerID, boolean isPriorityCustomer) throws InterruptedException {
+        lock.lock();
+        try {
+            while (tickets.isEmpty() || (priorityAccess && !isPriorityCustomer)) {
+                if (tickets.isEmpty() && totalTicketsSold >= totalTicketsToAdd) {
+                    // All tickets have been sold
                     return;
                 }
-            } else {
-                System.out.println(customerID + " was interrupted while waiting for a ticket.");
-                return;
+                if (priorityAccess && !isPriorityCustomer) {
+                    priorityTurn.await(); // Wait until priority customers are served
+                } else {
+                    ticketsAvailable.await(); // Wait for tickets to become available
+                }
             }
+
+            Ticket ticket = tickets.remove(0);
+            totalTicketsSold++;
+            System.out.println("Customer: " + customerID + " purchased Ticket: " + ticket.getTicketID());
+
+            if (tickets.isEmpty() || !isPriorityCustomer) {
+                priorityAccess = false;
+                priorityTurn.signalAll();
+            }
+
+            ticketsAvailable.signalAll();
+
+        } finally {
+            lock.unlock();
         }
-
-        Ticket ticket = tickets.remove(0);
-        notifyAll();
-
-        System.out.println(customerID + (isPriorityCustomer ? " (Priority)" : "") + " successfully purchased Ticket: " + ticket.getTicketID());
     }
 
+    public boolean allTicketsProcessed() {
+        lock.lock();
+        try {
+            return totalTicketsSold >= totalTicketsToAdd;
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    public int getTotalTicketsSold(){
+        return this.totalTicketsSold;
+    }
 }
