@@ -1,28 +1,45 @@
-public class Customer implements Runnable {
-    private final String customerID;
+import java.util.concurrent.atomic.AtomicInteger;
+
+class Customer implements Runnable {
     private final TicketPool ticketPool;
-    private final boolean isPriorityCustomer;
-    private final int retrievalRate;
+    private final String customerName;
+    private final long retrievalRate;
+    private final AtomicInteger ticketsSold;
+    private int ticketsBought = 0;
 
-
-    public Customer(String customerID, TicketPool ticketPool, boolean isPriorityCustomer, int retrievalRate){
-        this.customerID = customerID;
+    public Customer(TicketPool ticketPool, String customerName, long retrievalRate, AtomicInteger ticketsSold) {
         this.ticketPool = ticketPool;
-        this.isPriorityCustomer = isPriorityCustomer;
+        this.customerName = customerName;
         this.retrievalRate = retrievalRate;
+        this.ticketsSold = ticketsSold;
     }
 
 
+    public String getCustomerName() {
+        return customerName;
+    }
+
+    public int getTicketsBought() {
+        return ticketsBought;
+    }
+
     @Override
-    public void run(){
-        try {
-            while (!ticketPool.allTicketsProcessed()) {
-                ticketPool.buyTicket(customerID, isPriorityCustomer);
+    public void run() {
+        while (true) {
+            try {
+                Ticket ticket = ticketPool.removeTicket();
+                if (ticket == null) {
+                    break;
+                }
+                ticketsBought++;
+                ticketsSold.incrementAndGet();
+                String ticketID = ticket.getTicketID();
+                System.out.println(customerName + " purchased Ticket: " + ticketID);
                 Thread.sleep(retrievalRate);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
             }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            System.out.println(customerID + " interrupted.");
         }
     }
 }

@@ -140,25 +140,24 @@ public class Main {
         return user_input;
     }
 
-
-    public static int validate(String Statement, int TicketNum){
+    public static int validate(String Statement, int Capacity) {
         Scanner scanner = new Scanner(System.in);
         int user_input;
 
-        while(true) {
-            try{
+        while (true) {
+            try {
                 System.out.print(Statement);
                 user_input = scanner.nextInt();
-            } catch (InputMismatchException e){
+            } catch (InputMismatchException e) {
                 System.out.println("Enter a valid integer value, larger than 0..");
                 scanner.nextLine();
                 continue;
             }
-            if (user_input <= 0){
+            if (user_input <= 0) {
                 System.out.println("Enter a valid integer value, larger than 0..");
                 scanner.nextLine();
-            } else if (user_input <= TicketNum) {
-                System.out.println("Enter a valid integer value, larger than total number of tickets");
+            } else if (user_input > Capacity) {
+                System.out.println("Enter a valid integer value, that respects the requirements");
                 scanner.nextLine();
             } else {
                 scanner.nextLine();

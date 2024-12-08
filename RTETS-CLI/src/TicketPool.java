@@ -1,96 +1,69 @@
-import java.util.*;
-import java.util.concurrent.locks.Condition;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
-public class TicketPool {
-    private final List<Ticket> tickets = Collections.synchronizedList(new LinkedList<>());
-    private final PriorityQueue<String> vipQueue = new PriorityQueue<>();
+class TicketPool {
+    private final LinkedBlockingQueue<Ticket> tickets;
     private final int maxCapacity;
-    private final ReentrantLock lock = new ReentrantLock();
-    private final Condition ticketsAvailable = lock.newCondition();
-//    private final Condition priorityTurn = lock.newCondition();
-//    private boolean priorityAccess = true;
-    private final Condition notFull = lock.newCondition();
-    private int totalTicketsAdded = 0;
-    private int totalTicketsSold = 0;
-    private final int totalTicketsToAdd;
-    private int unsatisfiedCustomers = 0;
+    private final int totalTickets;
+    private final ReentrantLock lock;
+    private final Semaphore producerSemaphore;
+    private final Semaphore consumerSemaphore;
+    private volatile int totalTicketsAdded;
 
-
-    public TicketPool(int maxCapacity, int totalTicketsToAdd){
+    public TicketPool(int maxCapacity, int totalTickets) {
         this.maxCapacity = maxCapacity;
-        this.totalTicketsToAdd = totalTicketsToAdd;
+        this.totalTickets = totalTickets;
+        this.tickets = new LinkedBlockingQueue<>(maxCapacity);
+        this.lock = new ReentrantLock(true); // Fair lock to prevent starvation
+        this.producerSemaphore = new Semaphore(maxCapacity);
+        this.consumerSemaphore = new Semaphore(0);
+        this.totalTicketsAdded = 0;
     }
 
-    public void addTicket(Ticket ticket) throws InterruptedException{
+    public boolean addTickets(Ticket ticket) throws InterruptedException {
+        // Attempt to acquire producer semaphore with a timeout
+        if (!producerSemaphore.tryAcquire(1, TimeUnit.SECONDS)) {
+            return false;
+        }
+
         lock.lock();
         try {
-            while (tickets.size() >= maxCapacity) {
-                notFull.await();
+            // Double-check ticket addition conditions
+            if (totalTicketsAdded >= totalTickets || tickets.size() >= maxCapacity) {
+                producerSemaphore.release();
+                return false;
             }
 
-            tickets.add(ticket);
+            tickets.offer(ticket);
             totalTicketsAdded++;
-//            System.out.println("Ticket added: " + ticket.getTicketID() + " | Total Tickets in pool: " + tickets.size());
-
-            ticketsAvailable.signalAll();
-
+            consumerSemaphore.release(); // Signal a consumer
+            return true;
         } finally {
             lock.unlock();
         }
     }
 
+    public Ticket removeTicket() throws InterruptedException {
+        // Attempt to acquire consumer semaphore with a timeout
+        if (!consumerSemaphore.tryAcquire(1, TimeUnit.SECONDS)) {
+            return null;
+        }
 
-    public void buyTicket(String customerID, boolean isPriorityCustomer) throws InterruptedException {
         lock.lock();
         try {
-            if (isPriorityCustomer) {
-                vipQueue.offer(customerID); // Add VIP customer to the priority queue
+            // If no more tickets will be added and queue is empty
+            if (totalTicketsAdded >= totalTickets && tickets.isEmpty()) {
+                consumerSemaphore.release(); // Release for other potential consumers
+                return null;
             }
 
-            while (tickets.isEmpty() || (isPriorityCustomer && !vipQueue.peek().equals(customerID))) {
-                if (totalTicketsSold >= totalTicketsToAdd) {
-                    // All tickets sold
-                    unsatisfiedCustomers++;
-                    return;
-                }
-                ticketsAvailable.await(); // Wait for tickets to be added or for VIP priority
-            }
-
-            // Remove the ticket and update sales
-            Ticket ticket = tickets.remove(0);
-            totalTicketsSold++;
-
-            if (isPriorityCustomer) {
-                vipQueue.poll(); // Remove from VIP queue once served
-            }
-
-            System.out.println("Customer: " + customerID + " purchased Ticket: " + ticket.getTicketID());
-
-            notFull.signalAll();
+            Ticket ticket = tickets.poll();
+            producerSemaphore.release(); // Signal a producer
+            return ticket;
         } finally {
             lock.unlock();
         }
-    }
-
-    public boolean allTicketsProcessed() {
-        lock.lock();
-        try {
-            return totalTicketsSold >= totalTicketsToAdd;
-        } finally {
-            lock.unlock();
-        }
-    }
-
-    public int getUnsatisfiedCustomers() {
-        return unsatisfiedCustomers;
-    }
-
-    public int getExcessTickets() {
-        return Math.max(0, totalTicketsAdded - totalTicketsSold);
-    }
-
-    public int getTotalTicketsSold() {
-        return this.totalTicketsSold;
     }
 }

@@ -1,23 +1,10 @@
 public class Configuration {
-    private int totalTickets;
-    private int vendorNum;
-    private int customerNum;
-    private int ticketReleaseRate;
-    private int customerRetrievalRate;
-    private int maxTicketCapacity;
-    private int PriorityCustomerNum;
-    private int PriorityCustomerRetrievalRate;
-
-    public Configuration(int totalTickets, int vendorNum, int customerNum, int ticketReleaseRate, int customerRetrievalRate, int maxTicketCapacity, int PriorityCustomerNum, int PriorityCustomerRetrievalRate){
-        this.totalTickets = totalTickets;
-        this.vendorNum = vendorNum;
-        this.customerNum = customerNum;
-        this.ticketReleaseRate = ticketReleaseRate;
-        this.customerRetrievalRate = customerRetrievalRate;
-        this.maxTicketCapacity = maxTicketCapacity;
-        this.PriorityCustomerNum = PriorityCustomerNum;
-        this.PriorityCustomerRetrievalRate = PriorityCustomerRetrievalRate;
-    }
+    private final int totalTickets;
+    private final int vendorNum;
+    private final int customerNum;
+    private final int ticketReleaseRate;
+    private final int customerRetrievalRate;
+    private final int maxTicketCapacity;
 
 
     public Configuration(int totalTickets, int vendorNum, int customerNum, int ticketReleaseRate, int customerRetrievalRate, int maxTicketCapacity){
@@ -51,15 +38,5 @@ public class Configuration {
         return this.maxTicketCapacity;
     }
 
-    public int getPriorityCustomerNum(){
-        return this.PriorityCustomerNum;
-    }
-
-    public int getPriorityCustomerRetrievalRate(){
-        return this.PriorityCustomerRetrievalRate;
-    }
-
-    public int getTotalCustomerNum() {
-        return this.customerNum + this.getPriorityCustomerNum();
-    }
 }
+
