@@ -15,7 +15,7 @@ public class Vendor implements Runnable {
     public void run(){
         int addedTickets = 0;
         try{
-            while (addedTickets < config.getMaxTicketCapacity()){
+            for (int i =1; i < config.getMaxTicketCapacity(); i++ ){
                 Ticket ticket =  new Ticket("T" + (++addedTickets));
                 ticketPool.addTicket(ticket);
                 System.out.println("Vendor: " + vendorID + " added a ticket (" + ticket.getTicketID() + ") | Total number of tickets: " + addedTickets);

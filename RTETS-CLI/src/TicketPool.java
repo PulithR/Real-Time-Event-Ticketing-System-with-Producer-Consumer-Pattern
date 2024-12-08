@@ -1,18 +1,21 @@
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class TicketPool {
-    private final List<Ticket> tickets = new LinkedList<>();
+    private final List<Ticket> tickets = Collections.synchronizedList(new LinkedList<>());
+    private final PriorityQueue<String> vipQueue = new PriorityQueue<>();
     private final int maxCapacity;
     private final ReentrantLock lock = new ReentrantLock();
     private final Condition ticketsAvailable = lock.newCondition();
-    private final Condition priorityTurn = lock.newCondition();
-    private boolean priorityAccess = true;
+//    private final Condition priorityTurn = lock.newCondition();
+//    private boolean priorityAccess = true;
+    private final Condition notFull = lock.newCondition();
     private int totalTicketsAdded = 0;
     private int totalTicketsSold = 0;
     private final int totalTicketsToAdd;
+    private int unsatisfiedCustomers = 0;
+
 
     public TicketPool(int maxCapacity, int totalTicketsToAdd){
         this.maxCapacity = maxCapacity;
@@ -23,7 +26,7 @@ public class TicketPool {
         lock.lock();
         try {
             while (tickets.size() >= maxCapacity) {
-                ticketsAvailable.await();
+                notFull.await();
             }
 
             tickets.add(ticket);
@@ -41,29 +44,30 @@ public class TicketPool {
     public void buyTicket(String customerID, boolean isPriorityCustomer) throws InterruptedException {
         lock.lock();
         try {
-            while (tickets.isEmpty() || (priorityAccess && !isPriorityCustomer)) {
-                if (tickets.isEmpty() && totalTicketsSold >= totalTicketsToAdd) {
-                    // All tickets have been sold
+            if (isPriorityCustomer) {
+                vipQueue.offer(customerID); // Add VIP customer to the priority queue
+            }
+
+            while (tickets.isEmpty() || (isPriorityCustomer && !vipQueue.peek().equals(customerID))) {
+                if (totalTicketsSold >= totalTicketsToAdd) {
+                    // All tickets sold
+                    unsatisfiedCustomers++;
                     return;
                 }
-                if (priorityAccess && !isPriorityCustomer) {
-                    priorityTurn.await(); // Wait until priority customers are served
-                } else {
-                    ticketsAvailable.await(); // Wait for tickets to become available
-                }
+                ticketsAvailable.await(); // Wait for tickets to be added or for VIP priority
             }
 
+            // Remove the ticket and update sales
             Ticket ticket = tickets.remove(0);
             totalTicketsSold++;
-            System.out.println("Customer: " + customerID + " purchased Ticket: " + ticket.getTicketID());
 
-            if (tickets.isEmpty() || !isPriorityCustomer) {
-                priorityAccess = false;
-                priorityTurn.signalAll();
+            if (isPriorityCustomer) {
+                vipQueue.poll(); // Remove from VIP queue once served
             }
 
-            ticketsAvailable.signalAll();
+            System.out.println("Customer: " + customerID + " purchased Ticket: " + ticket.getTicketID());
 
+            notFull.signalAll();
         } finally {
             lock.unlock();
         }
@@ -78,7 +82,15 @@ public class TicketPool {
         }
     }
 
-    public int getTotalTicketsSold(){
+    public int getUnsatisfiedCustomers() {
+        return unsatisfiedCustomers;
+    }
+
+    public int getExcessTickets() {
+        return Math.max(0, totalTicketsAdded - totalTicketsSold);
+    }
+
+    public int getTotalTicketsSold() {
         return this.totalTicketsSold;
     }
 }
