@@ -196,29 +196,79 @@ public class Main {
 
     }
 
-    public static void runStimulation(Configuration configuration) throws InterruptedException {
+    public static void runSimulation(Configuration configuration) throws InterruptedException {
         TicketPool ticketPool = new TicketPool(configuration.getMaxTicketCapacity(), configuration.getTotalTickets());
+        AtomicInteger ticketCounter = new AtomicInteger(1);// Shared counter for unique ticket IDs
+        AtomicInteger ticketsSold = new AtomicInteger(0);
+        List<Vendor> vendorList = new ArrayList<>();
+        List<Customer> customerList = new ArrayList<>();
+        List<Thread> threads = new ArrayList<>();
+        int zeroCustomer = 0;
+        int zeroVendor = 0;
 
+        long startTime = System.currentTimeMillis();
+
+        // Start vendors
         for (int i = 0; i < configuration.getVendorNum(); i++) {
-            new Thread(new Vendor(ticketPool, configuration, "Vendor_" + i)).start();
-        }
-        Thread.sleep(500);
-
-        for (int i = 0; i < (configuration.getPriorityCustomerNum()); i++) {
-            new Thread(new Customer("VIP_Customer_" + i, ticketPool, true, configuration.getPriorityCustomerRetrievalRate())).start();
-        }
-
-        for(int i = 0; i < (configuration.getCustomerNum()); i++) {
-            new Thread(new Customer("Customer_" + i, ticketPool, false, configuration.getCustomerRetrievalRate())).start();
+            String vendorName = "Vendor_" + i;
+            Vendor vendor = new Vendor(ticketPool, configuration.getTotalTickets(), vendorName, configuration.getTicketReleaseRate(), ticketCounter);
+            Thread vendorThread = new Thread(vendor);
+            vendorList.add(vendor);
+            threads.add(vendorThread);
+            vendorThread.start();
         }
 
-        while (!ticketPool.allTicketsProcessed()) {
-            Thread.sleep(100); // Check periodically
+        Thread.sleep(1000);
+
+        // Start customers
+        for (int i = 0; i < configuration.getCustomerNum(); i++) {
+            String customerName = "Customer_" + i;
+            Customer customer = new Customer(ticketPool, customerName, configuration.getCustomerRetrievalRate(), ticketsSold);
+            Thread customerThread = new Thread(customer);
+            customerList.add(customer);
+            threads.add(customerThread);
+            customerThread.start();
         }
 
-        System.out.println("Simulation complete!");
-        System.out.println("Total tickets sold: " + ticketPool.getTotalTicketsSold());
-        System.out.println("Unsatisfied customers: " + ticketPool.getUnsatisfiedCustomers());
-        System.out.println("Excess tickets: " + ticketPool.getExcessTickets());
+        // Wait for simulation to complete (in real implementation, threads would be joined or stopped gracefully)
+        for (Thread thread : threads) {
+            thread.join();
+        }
+
+        long endTime = System.currentTimeMillis();
+        long totalTime = endTime - startTime;
+
+        System.out.println();
+
+        System.out.println("\nVendor Summary:");
+        System.out.println("| Vendor Name | Tickets Sold |");
+        System.out.println("|-------------|--------------|");
+        for (Vendor vendor : vendorList) {
+            System.out.printf("| %-12s | %-12d |\n", vendor.getVendorName(), vendor.getTicketsSold());
+            if (vendor.getTicketsSold() == 0){
+                zeroVendor++;
+            }
+        }
+
+        System.out.println("\nCustomer Summary:");
+        System.out.println("| Customer Name | Tickets Bought |");
+        System.out.println("|---------------|----------------|");
+        for (Customer customer : customerList) {
+            System.out.printf("| %-12s | %-12d |\n", customer.getCustomerName(), customer.getTicketsBought());
+            if (customer.getTicketsBought() == 0){
+                zeroCustomer++;
+            }
+        }
+
+        double avgTicketsSold = (double) configuration.getTotalTickets() / vendorList.size();
+        double avgTicketsBought = (double) configuration.getTotalTickets() / customerList.size();
+
+        System.out.println("\nTotal Tickets Sold: " + configuration.getTotalTickets());
+        System.out.println("Vendors without any Ticket Sold: " + zeroVendor);
+        System.out.println("Customers without any Tickets: " + zeroCustomer);
+        System.out.printf("Average Tickets Sold per Vendor: %.2f\n", avgTicketsSold);
+        System.out.printf("Average Tickets Bought per Customer: %.2f\n", avgTicketsBought);
+        System.out.println("Simulation Time: " + totalTime + " milliseconds");
     }
+
 }

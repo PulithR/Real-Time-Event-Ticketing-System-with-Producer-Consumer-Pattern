@@ -1,29 +1,46 @@
+import java.util.concurrent.atomic.AtomicInteger;
 
-public class Vendor implements Runnable {
+class Vendor implements Runnable {
     private final TicketPool ticketPool;
-    private final Configuration config;
-    private final String vendorID;
+    private final int totalTickets;
+    private final String vendorName;
+    private final int releaseRate;
+    private final AtomicInteger ticketCounter;
+    private int ticketsSold = 0;
 
-
-    public Vendor(TicketPool ticketPool, Configuration config, String vendorID) {
+    public Vendor(TicketPool ticketPool, int totalTickets, String vendorName, int releaseRate, AtomicInteger ticketCounter) {
         this.ticketPool = ticketPool;
-        this.config = config;
-        this.vendorID = vendorID;
+        this.totalTickets = totalTickets;
+        this.vendorName = vendorName;
+        this.releaseRate = releaseRate;
+        this.ticketCounter = ticketCounter;
     }
 
+    public String getVendorName() {
+        return vendorName;
+    }
+
+    public int getTicketsSold() {
+        return ticketsSold;
+    }
+
+
     @Override
-    public void run(){
-        int addedTickets = 0;
-        try{
-            for (int i =1; i < config.getMaxTicketCapacity(); i++ ){
-                Ticket ticket =  new Ticket("T" + (++addedTickets));
-                ticketPool.addTicket(ticket);
-                System.out.println("Vendor: " + vendorID + " added a ticket (" + ticket.getTicketID() + ") | Total number of tickets: " + addedTickets);
-                Thread.sleep(config.getTicketReleaseRate());
+    public void run() {
+        for (int i = 1; i <= totalTickets; i++) {
+            try {
+                Ticket ticket = new Ticket("T" + ticketCounter.getAndIncrement());
+                if (ticketPool.addTickets(ticket)) {
+                    ticketsSold++;
+                    System.out.println(vendorName + " added a ticket (" + ticket.getTicketID() + ")");
+                } else {
+                    break; // Stop if no more tickets can be added
+                }
+                Thread.sleep(releaseRate);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
             }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            System.out.println("Vendor thread interrupted: " + e.getMessage());
         }
     }
 }
