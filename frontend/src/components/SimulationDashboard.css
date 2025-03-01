@@ -1,0 +1,92 @@
+/* SimulationDashboard.css */
+
+/* Base styling for the dashboard */
+.simulation-dashboard {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    font-family: Arial, sans-serif;
+    background-color: #f5f5f5;
+    min-height: 100vh;
+}
+
+/* Title styling */
+.simulation-dashboard h1 {
+    font-size: 2rem;
+    color: #333;
+    margin-bottom: 20px;
+}
+
+/* Configuration details container */
+.config-details {
+    width: 90%;
+    max-width: 600px;
+    margin-bottom: 20px;
+    padding: 15px;
+    background-color: #ffffff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.config-details p {
+    font-size: 1rem;
+    color: #555;
+    margin: 5px 0;
+}
+
+/* Simulation controls */
+.simulation-controls {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.simulation-controls button {
+    padding: 10px 20px;
+    font-size: 1rem;
+    color: #fff;
+    background-color: #007bff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.simulation-controls button:hover {
+    background-color: #0056b3;
+}
+
+/* Log container */
+.log-container {
+    width: 90%;
+    max-width: 800px;
+    height: 300px;
+    overflow-y: auto;
+    background-color: #ffffff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    padding: 15px;
+}
+
+.log-container p {
+    font-size: 0.9rem;
+    color: #555;
+    margin: 5px 0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .simulation-controls {
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .log-container {
+        height: 200px;
+    }
+}
